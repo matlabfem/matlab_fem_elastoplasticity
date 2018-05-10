@@ -9,30 +9,31 @@ function [S,DS,IND_p,lambda,Ep]=constitutive_problem(E,Ep_prev,shear,bulk,eta,c)
 % Drucker-Prager yield criterion.
 %
 % Input data:
-%  E_new - current strain tensor, size(E_new)=(3, n_int)
+%  E       - current strain tensor, size(E)=(3,n_int)
 %  Ep_prev - plastic strain tensor from the previous time step,
-%            size(Ep_prev)=(4, n_int)
-%  shear - shear moduli at integration points, size(shear)=(1, n_int)
-%  bulk - bulk moduli at integration points, size(shear)=(1, n_int)
-%  eta,c - inelastic parameters at integration points, 
-%          size(eta)=size(c)=(1, n_int)
+%            size(Ep_prev)=(4,n_int)
+%  shear   - shear moduli at integration points, size(shear)=(1,n_int)
+%  bulk    - bulk moduli at integration points, size(shear)=(1,n_int)
+%  eta,c   - inelastic parameters at integration points, 
+%            size(eta)=size(c)=(1,n_int)
 %
 % Output data:
-%  S - stress tensors at integration points, size(S)=(4, n_int)
-%  IND_p - 1*n_int logical array indicating integration points with plastic 
-%          response, n_plast=number of the points with plastic response
-%  DS - consistent tangent operators at integr. points,
-%         size(DS_p)=(9, n_plast)
+%  S      - stress tensors at integration points, size(S)=(4,n_int)
+%  DS     - consistent tangent operators at integr. points,
+%           size(DS)=(9,n_plast)
+%  IND_p  - logical array indicating integration points with plastic response,
+%           size(IND_p)=(1,n_int), 
+%           n_plast=number of the points with plastic response
 %  lambda - plastic multipliers, size(lambda)=(1,n_int)
-%  Ep - plastic strains, size(Ep)=(4,n_int)
+%  Ep     - plastic strains, size(Ep)=(4,n_int)
 %
 % =========================================================================
 %
   n_int=length(shear); % number of integration points
 
 %
-% Elastic tensor at integration points, size(ELAST)=(36, n_int).
-% Deviatoric and volumetric 6x6 matrices
+% Elastic tensor at integration points, size(Elast)=(9,n_int).
+% Deviatoric and volumetric 4x4 matrices
 %
   IOTA=[1;1;0;1];  
   VOL=IOTA*IOTA'; 
@@ -42,13 +43,13 @@ function [S,DS,IND_p,lambda,Ep]=constitutive_problem(E,Ep_prev,shear,bulk,eta,c)
 
 %
 % Trial variables:
-%   E_tr - trial strain tensors, size(E_tr)=(4,n_int)
-%   S_tr - trial stress tensors, size(E_tr)=(4,n_int)
-%   dev_E - deviatoric part of the trial strain, size(SD_tr)=(4,n_int)
-%   norm_E - norm of dev_E, size(norm_SD)=(1,n_int)
+%   E_tr   - trial strain tensors, size(E_tr)=(4,n_int)
+%   S_tr   - trial stress tensors, size(S_tr)=(4,n_int)
+%   dev_E  - deviatoric part of the trial strain, size(dev_E)=(4,n_int)
+%   norm_E - norm of dev_E, size(norm_E)=(1,n_int)
 %
-  E4=[E; zeros(1,n_int)];
-  E_tr = E4-Ep_prev ;                   % trial strain                           
+  E4=[E;zeros(1,n_int)];
+  E_tr = E4-Ep_prev;                    % trial strain                           
   S_tr=2*repmat(shear,4,1).*(DEV*E_tr)+repmat(bulk,4,1).*(VOL*E_tr);   
   dev_E=DEV*E_tr;                       % deviatoric part of E_tr
   norm_E=sqrt(max(0,sum(E_tr.*dev_E))); % norm of the deviatoric strain
@@ -56,9 +57,8 @@ function [S,DS,IND_p,lambda,Ep]=constitutive_problem(E,Ep_prev,shear,bulk,eta,c)
   p_tr=bulk.*(IOTA'*E_tr);              % trial volumetric stress
   
 %
-% return criteria and specification of integration points
-% with plastic return to the sooth portion and to the apex of the yield
-% surface
+% return criteria and specification of integration points with plastic
+% return to the sooth portion and to the apex of the yield surface
 %
   denom_a= bulk.*(eta.^2);
   denom_s=shear+denom_a;
@@ -76,7 +76,7 @@ function [S,DS,IND_p,lambda,Ep]=constitutive_problem(E,Ep_prev,shear,bulk,eta,c)
 % The elastic prediction of unknowns
 %
 
-  S=S_tr; DS=2*Dev(:)*shear+Vol(:)*bulk; 
+  S=S_tr; DS=2*Dev(:)*shear+Vol(:)*bulk;
 
 %
 % The plastic correction at the selected integration points

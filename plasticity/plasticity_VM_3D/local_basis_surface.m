@@ -7,17 +7,17 @@ function [HatP_s,DHatP1_s,DHatP2_s] = local_basis_surface(elem_type, Xi_s)
 %
 %  input data: 
 %       elem_type - the type of Lagrange finite elements
-%       Xi_s - coordinates of the quadrature points, size(Xi_s)=(3,n_q_s)
+%       Xi_s      - coordinates of the quadrature points, size(Xi_s)=(3,n_q_s)
 %
 %  output data:
-%       HatP_s - values of basis functions at the quadrature points,
-%              size(HatP_s)=(n_p_s,n_q_s)
+%       HatP_s   - values of basis functions at the quadrature points,
+%                  size(HatP_s)=(n_p_s,n_q_s)
 %       DHatP1_s - derivatives of basis functions at the quadrature points 
-%                in the direction xi_1, size(DHatP1_s)=(n_p_s,n_q_s)
+%                  in the direction xi_1, size(DHatP1_s)=(n_p_s,n_q_s)
 %       DHatP2_s - derivatives of basis functions at the quadrature points 
-%                in the direction xi_2, size(DHatP2_s)=(n_p_s,n_q_s)
-%       n_p_s - number of basis functions on the surface
-%       n_q_s - number of integration points within the surface
+%                  in the direction xi_2, size(DHatP2_s)=(n_p_s,n_q_s)
+%       n_p_s    - number of basis functions on the surface
+%       n_q_s    - number of integration points within the surface
 %--------------------------------------------------------------------------
 
 xi_1 = Xi_s(1,:); xi_2 = Xi_s(2,:); 

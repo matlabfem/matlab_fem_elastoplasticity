@@ -6,14 +6,15 @@ function Q_node=transformation(Q_int,elem,weight)
 % Transformation of function values at integration points to function
 % values at nodes of the finite element mesh.
 %
-%    output: Q_node (1*n_n) values of a function Q at nodes of the FE mesh
-%                           where n_n is the number of nodes
+%    output: 
+%      Q_node - values of a function Q at nodes of the FE mesh,
+%               size(Q_node)=(1,n_n), where n_n is the number of nodes
 %                  
 %    input data:
-%      Q_int - (1*n_int) values of a function Q at integration points
-%      elem - to indicate nodes belonging to each element 
-%             size(elem)=(n_e,n_p) where n_e is a number of elements 
-%             and n_p is a number of the nodes within one element                           
+%      Q_int  - values of a function Q at integration points, size(Q_int)=(1,n_int) 
+%      elem   - to indicate nodes belonging to each element 
+%               size(elem)=(n_p,n_e) where n_e is a number of elements 
+%               and n_p is a number of the nodes within one element                           
 %      weight - weight factors at integration points, size(weight)=(1,n_int)
 %
 % =========================================================================

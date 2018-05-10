@@ -55,5 +55,5 @@ switch(elem_type)
      ((8/9)^2)*(5/9)* [0 0 0 0 1 0 0 0 0 0 1 0 1 0 1 0 1 0 0 0 0 0 1 0 0 0 0] +...
            ((8/9)^3)* [0 0 0 0 0 0 0 0 0 0 0 0 0 1 0 0 0 0 0 0 0 0 0 0 0 0 0];
       
-  otherwise; disp('Bad choise of element type');
+  otherwise; disp('Bad choice of element type');
 end

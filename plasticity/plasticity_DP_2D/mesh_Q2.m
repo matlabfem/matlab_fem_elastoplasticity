@@ -7,21 +7,22 @@ function [coord,elem,surf,dirichlet,Q]=mesh_Q2(level,size_xy)
 %  4 vertices and 4 midpoints.
 %
 %  input data:
-%    level - an integer defining a density of a uniform mesh
+%    level   - an integer defining a density of a uniform mesh
 %    size_xy - size of the body in directions x and y (integer)
-%         body=(0,size_xy)x(0,size_xy)
+%    body=(0,size_xy)x(0,size_xy)
 %
 %  output data:
-%    coord - coordinates of the nodes, size(coord)=(2,n_n) where n_n is a
-%            number of nodes including midpoints
-%    elem - 8 x n_e array containing numbers of nodes defining each
-%           element, n_e = number of elements
-%    surf - 3 x n_s array containing numbers of nodes defining each
-%           surface element, n_s = number of surface elements
-%    dirichlet - 2 x n_n array indicating the nodes where the
-%            nonhomogeneous Dirichlet boundary condition is considered
-%    Q - logical 2 x n_n array indicating the nodes where the Dirichlet
-%        boundary condition is considered
+%    coord     - coordinates of the nodes, size(coord)=(2,n_n) where n_n is a
+%                number of nodes including midpoints
+%    elem      - array containing numbers of nodes defining each element, 
+%                size(elem)=(8,n_e), n_e = number of elements
+%    surf      - array containing numbers of nodes defining each surface element, 
+%                size(surf)=(3,n_s), n_s = number of surface elements
+%    dirichlet - array indicating the nodes where the nonhomogenous
+%                Dirichlet boundary condition is considered,
+%                size(dirichlet)=(2,n_n)
+%    Q         - logical array indicating the nodes where the Dirichlet
+%                boundary condition is considered, size(Q)=(2,n_n)
 %
 % ======================================================================
 %
@@ -35,9 +36,8 @@ function [coord,elem,surf,dirichlet,Q]=mesh_Q2(level,size_xy)
 
 %
 % C - 2D auxilliary array that contains node numbers and that is important 
-% for the mesh construction. Since the body is a union of two 
-% the array C also consists of two auxilliary 2D arrays, C1 and C2. To
-% specify selected midpoints, we define 2D logical arrays Q1 and Q2.
+% for the mesh construction. Q_mid is other 2D auxilliary array which
+% describe middle nodes which are not consider for Q2 elements
 %
   C=zeros(2*N_x+1,2*N_y+1);
   Q_mid= true(2*N_x+1,2*N_y+1);
@@ -56,11 +56,11 @@ function [coord,elem,surf,dirichlet,Q]=mesh_Q2(level,size_xy)
   %
   c_y=repmat(coord_y,[2*N_x+1,1]);
   
-  % the required 3 x n_n array of coordinates
+  % the required array of coordinates, size(coord)=(2,n_n)
   coord=[c_x(Q_mid)'; c_y(Q_mid)'];
   
 % 
-% construction of the 8 x n_e array elem
+% construction of the array elem, size(elem)=(8,n_e)
 %
   % ordering of the nodes creating the unit cube:
   %  V1 -> [0 0], V2 -> [1 0], V3 -> [1 1], V4 -> [0 1]

@@ -6,19 +6,19 @@ function [HatP,DHatP1,DHatP2,DHatP3] = local_basis_volume(elem_type, Xi)
 %
 %  input data: 
 %       elem_type - the type of Lagrange finite elements
-%       Xi - coordinates of the quadrature points, size(Xi)=(3,n_q)
+%       Xi        - coordinates of the quadrature points, size(Xi)=(3,n_q)
 %
 %  output data:
-%       HatP - values of basis functions at the quadrature points,
-%              size(HatP)=(n_p,n_q)
+%       HatP   - values of basis functions at the quadrature points,
+%                size(HatP)=(n_p,n_q)
 %       DHatP1 - derivatives of basis functions at the quadrature points 
-%                in the direction xi_1, size(HatP)=(n_p,n_q)
+%                in the direction xi_1, size(DHatP1)=(n_p,n_q)
 %       DHatP2 - derivatives of basis functions at the quadrature points 
 %                in the direction xi_2, size(DHatP2)=(n_p,n_q)
 %       DHatP3 - derivatives of basis functions at the quadrature points 
 %                in the direction xi_3, size(DHatP3)=(n_p,n_q)
-%       n_p - number of basis functions
-%       n_q - number of integration points within one element
+%       n_p    - number of basis functions
+%       n_q    - number of integration points within one element
 %--------------------------------------------------------------------------
 
 xi_1 = Xi(1,:); xi_2 = Xi(2,:); xi_3 = Xi(3,:);

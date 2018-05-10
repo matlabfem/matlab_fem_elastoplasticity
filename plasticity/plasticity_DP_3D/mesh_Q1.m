@@ -3,31 +3,32 @@ function [coord,elem,surf,dirichlet,Q]=mesh_Q1(level,size_xy,size_z)
 
 % =========================================================================
 %
-%  This function creates tetrahedral mesh for Q1 elements
+%  This function creates hexahedral mesh for Q1 elements
 %
 %  input data:
-%    level - an integer defining a density of a uniform mesh
+%    level   - an integer defining a density of a uniform mesh
 %    size_xy - size of the body in directions x and y (integer)
 %    size_z  - size of the body in z-direction (integer) 
-%         body=(0,size_xy)x(0,size_xy)x(0,size_z)
+%    body=(0,size_xy)x(0,size_xy)x(0,size_z)
 %
 %  output data:
-%    coord - coordinates of the nodes, size(coord)=(3,n_n) where n_n is a
-%            number of nodes
-%    elem - 8 x n_e array containing numbers of nodes defining each
-%           element, n_e = number of elements
-%    surf - 4 x n_s array containing numbers of nodes defining each
-%           surface element, n_s = number of surface elements
-%    dirichlet - 3 x n_n array indicating the nodes where the
-%            nonhomogeneous Dirichlet boundary condition is considered
-%    Q - logical 3 x n_n array indicating the nodes where the 
-%        Dirichlet boundary condition is considered
+%    coord     - coordinates of the nodes, size(coord)=(3,n_n) where n_n is a
+%                number of nodes
+%    elem      - array containing numbers of nodes defining each element, 
+%                size(elem)=(8,n_e), n_e = number of elements
+%    surf      - array containing numbers of nodes defining each surface element, 
+%                size(surf)=(4,n_s), n_s = number of surface elements
+%    dirichlet - array indicating the nodes where the nonhomogenous
+%                Dirichlet boundary condition is considered,
+%                size(dirichlet)=(3,n_n)
+%    Q         - logical array indicating the nodes where the Dirichlet
+%                boundary condition is considered, size(Q)=(3,n_n)
 %
 % ======================================================================
 %
 
 %
-% numbers of segments in x, y and z directions
+% numbers of segments, nodes and elements
 %
 
   N_x = size_xy*2^level;      % number of segments in x direction
@@ -53,7 +54,7 @@ function [coord,elem,surf,dirichlet,Q]=mesh_Q1(level,size_xy,size_z)
   c_y=repmat(kron(coord_y,ones(1,N_x+1)),1,N_z+1);     
   c_z=kron(coord_z,ones(1,(N_x+1)*(N_y+1)));    
          
-  % the required 3 x n_n array of coordinates     
+  % the required array of coordinates, size(coord)=(3,n_n)
   coord=[c_x; c_y; c_z] ;  
   
 % 
@@ -89,7 +90,7 @@ function [coord,elem,surf,dirichlet,Q]=mesh_Q1(level,size_xy,size_z)
   V8=false(N_x+1,N_y+1,N_z+1);
   V8(1:N_x,2:(N_y+1),2:(N_z+1))=1;
 
-  % the 8 x n_e array elem
+  % the array elem, size(elem)=(8,n_e)
   elem=[C(V1)'; C(V2)'; C(V3)'; C(V4)';
         C(V5)'; C(V6)'; C(V7)'; C(V8)' ];
     

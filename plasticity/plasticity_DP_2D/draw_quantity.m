@@ -5,18 +5,17 @@ function draw_quantity(coord,elem,U,Q_node,elem_type,size_xy)
 %  This function depicts prescribed nodal quantity
 %
 %  input data:
-%    coord - coordinates of the nodes, size(coord)=(2,n_n) where n_n is a
-%            number of nodes
-%    surf - n_p x n_s array containing numbers of nodes defining each
-%           surface element, n_s = number of surface elements
-%    U - nodal displacements, size(U)=(2,n_n) to catch deformed shape
-%        if the deformed shape is not required then set 0*U
-%    Q_node - prescribed nodal quantity, size(Q_node)=(1,n_n)
+%    coord     - coordinates of the nodes, size(coord)=(2,n_n) where n_n is a
+%                number of nodes
+%    elem      - array containing numbers of nodes defining each element, 
+%                size(elem)=(n_p,n_e), n_e = number of elements
+%    U         - nodal displacements, size(U)=(2,n_n) to catch deformed shape
+%                if the deformed shape is not required then set 0*U
+%    Q_node    - prescribed nodal quantity, size(Q_node)=(1,n_n)
 %    elem_type - the type of finite elements; available choices:
 %                'P1', 'P2', 'Q1', 'Q2'
-%    size_xy - size of the body in x and y direction (integer)
-%    size_z  - size of the body in z-direction (integer) 
-%         body=(0,size_xy)x(0,size_xy)x(0,size_z)
+%    size_xy   - size of the body in x and y direction (integer)
+%    body=(0,size_xy)x(0,size_xy)
 %
 % ======================================================================
 %
@@ -32,7 +31,9 @@ function draw_quantity(coord,elem,U,Q_node,elem_type,size_xy)
     s = patch('Faces',elem(1:4,:)','Vertices',coord'+U',...
         'FaceVertexCData',Q_node','FaceColor','interp','EdgeColor','none'); 
   end
-  alpha(s,.5);
+  if ~isOctave  
+    alpha(s,.5);
+  end
   colorbar;
   
  % undeformed shape of the body
@@ -43,8 +44,8 @@ function draw_quantity(coord,elem,U,Q_node,elem_type,size_xy)
   
   %
   box on
-  view(2);
-  axis equal;
+  view(2);      % standard view in 2D
+  axis equal;   % real ratios
   hold off;
   axis off;
 end

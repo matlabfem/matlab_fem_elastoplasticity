@@ -6,21 +6,22 @@ function [coord,elem,surf,dirichlet,Q]= mesh_Q1(level,size_xy)
 %  This function creates quadrilateral mesh for Q1 elements
 %
 %  input data:
-%    level - an integer defining a density of a uniform mesh
+%    level   - an integer defining a density of a uniform mesh
 %    size_xy - size of the body in directions x and y (integer)
-%         body=(0,size_xy)  x(0,size_xy) 
+%    body=(0,size_xy)x(0,size_xy) 
 %
 %  output data:
-%    coord - coordinates of the nodes, size(coord)=(2,n_n) where n_n is a
-%            number of nodes
-%    elem - 4 x n_e array containing numbers of nodes defining each
-%           element, n_e = number of elements
-%    surf - 2 x n_s array containing numbers of nodes defining each
-%           surface element, n_s = number of surface elements
-%    dirichlet - 2 x n_n array indicating the nodes where the
-%            nonhomogeneous Dirichlet boundary condition is considered
-%    Q - logical 2 x n_n array indicating the nodes where the Dirichlet
-%        boundary condition is considered
+%    coord     - coordinates of the nodes, size(coord)=(2,n_n) where n_n is a
+%                number of nodes
+%    elem      - array containing numbers of nodes defining each element, 
+%                size(elem)=(4,n_e), n_e = number of elements
+%    surf      - array containing numbers of nodes defining each surface element, 
+%                size(surf)=(2,n_s), n_s = number of surface elements
+%    dirichlet - array indicating the nodes where the nonhomogenous
+%                Dirichlet boundary condition is considered,
+%                size(dirichlet)=(2,n_n)
+%    Q         - logical array indicating the nodes where the Dirichlet
+%                boundary condition is considered, size(Q)=(2,n_n)
 %
 % ======================================================================
 %
@@ -34,8 +35,7 @@ function [coord,elem,surf,dirichlet,Q]= mesh_Q1(level,size_xy)
  
 %
 % C - 2D auxilliary array that contains node numbers and that is important 
-% for the mesh construction. Since the body is a union of two rectangles
-% the array C also consists of two auxilliary 2D arrays, C1 and C2.
+% for the mesh construction.
 %
   C=reshape(1:(N_x+1)*(N_y+1),N_x+1,N_y+1);
 
@@ -51,7 +51,7 @@ function [coord,elem,surf,dirichlet,Q]= mesh_Q1(level,size_xy)
   c_x=repmat(coord_x,1,N_y+1);     
   c_y=repmat(kron(coord_y,ones(1,N_x+1)),1);     
        
-  % the required 3 x n_n array of coordinates     
+  % the required array of coordinates, size(coord)=(2,n_n) 
   coord=[c_x; c_y] ;
   
 % 
@@ -74,7 +74,7 @@ function [coord,elem,surf,dirichlet,Q]= mesh_Q1(level,size_xy)
   V4=false(N_x+1,N_y+1);
   V4(1:N_x,2:(N_y+1))=1; 
 
-  % the 4 x n_e array elem
+  % the array elem, size(elem)=(4,n_e)
   elem=[C(V1)'; C(V2)'; C(V3)'; C(V4)' ];
     
 %

@@ -3,31 +3,31 @@ function [coord,elem,surf,neumann,Q]=mesh_Q2(level,size_xy,size_z,size_hole)
 
 % =========================================================================
 %
-%  This function creates tetrahedral mesh for Q2 elements consisting of 
+%  This function creates hexahedral mesh for Q2 elements consisting of 
 %  8 vertices and 12 midpoints.
 %
 %  input data:
-%    level - an integer defining a density of a uniform mesh
-%    size_xy - size of the body in directions x and y (integer)
-%    size_z  - size of the body in z-direction (integer) 
+%    level     - an integer defining a density of a uniform mesh
+%    size_xy   - size of the body in directions x and y (integer)
+%    size_z    - size of the body in z-direction (integer) 
 %    size_hole - size of the hole in the body (integer)
 %                size_hole < size_xy
-%         body=(0,size_xy)x(0,size_xy)x(0,size_z)\setminus
-%              (0,size_hole)x(0,size_hole)x(0,size_z)
+%    body=(0,size_xy)  x(0,size_xy)  x(0,size_z)\setminus
+%         (0,size_hole)x(0,size_hole)x(0,size_z)
 %
 %  output data:
-%    coord - coordinates of the nodes, size(coord)=(3,n_n) where n_n is a
-%            number of nodes including midpoints
-%    elem - 20 x n_e array containing numbers of nodes defining each
-%           element, n_e = number of elements
-%    surf - 8 x n_s array containing numbers of nodes defining each
-%           surface element, n_s = number of surface elements
-%    neumann - 8 x n_e_s array containing numbers of nodes defining each
-%           surface element. The surface is the following side of the body:
-%           (0,size_xy) x size_xy x (0,size_z), where the nonhomogeneous
-%           Neumann boundary condition is considered.
-%    Q - logical 3 x n_n array indicating the nodes where the homogeneous
-%        Dirichlet boundary condition is considered
+%    coord   - coordinates of the nodes, size(coord)=(3,n_n) where n_n is a
+%              number of nodes including midpoints
+%    elem    - array containing numbers of nodes defining each element,
+%              size(elem)=(20,n_e), n_e = number of elements
+%    surf    - array containing numbers of nodes defining each surace element,
+%              size(surf)=(8,n_s), n_s = number of surface elements
+%    neumann - array containing numbers of nodes defining each surface element,
+%              size(neumann)=(8,n_e_s). The surface is the following side
+%              of the body: (0,size_xy) x size_xy x (0,size_z), where the nonhomogeneous
+%              Neumann boundary condition is considered.
+%    Q       - logical array indicating the nodes where the homogeneous 
+%              Dirichlet boundary condition is considered, size(Q)=(3,n_n)
 %
 % ======================================================================
 %
@@ -95,13 +95,13 @@ function [coord,elem,surf,neumann,Q]=mesh_Q2(level,size_xy,size_z,size_hole)
   c1_z=reshape(kron(coord_z,ones(1,2*N1_y*(2*N2_x+1))),[2*N2_x+1,2*N1_y,(2*N_z+1)]);
   c2_z=reshape(kron(coord_z,ones(1,(2*N_x+1)*(2*N2_y+1))),[(2*N_x+1),(2*N2_y+1),(2*N_z+1)]);  
   
-  % the required 3 x n_n array of coordinates
+  % the required array of coordinates, size(coord)=(3,n_n)
   coord=[c1_x(Q1)' c2_x(Q2)'; 
          c1_y(Q1)' c2_y(Q2)';
          c1_z(Q1)' c2_z(Q2)']     ;
   
 % 
-% construction of the 20 x n_e array elem
+% construction of the array elem, size(elem)=(20,n_e)
 %
   % ordering of the nodes creating the unit cube:
   %  V1 -> [0 0 0], V2 -> [1 0 0], V3 -> [1 1 0], V4 -> [0 1 0]
@@ -329,5 +329,6 @@ function [coord,elem,surf,neumann,Q]=mesh_Q2(level,size_xy,size_z,size_hole)
    
   % logical array indicating the nodes with the Dirichlet boundary cond.
   Q = coord>0 ;
+  Q(3,(coord(3,:)==size_z)) = 0;     
    
 end

@@ -1,5 +1,5 @@
 
-function [S,IND_p,DS_p,Ep,Hard]=constitutive_problem(E,Ep_prev,Hard_prev,...
+function [S,DS,IND_p,Ep,Hard]=constitutive_problem(E,Ep_prev,Hard_prev,...
                                                       shear,bulk,a,Y)
 
 % =========================================================================
@@ -10,46 +10,43 @@ function [S,IND_p,DS_p,Ep,Hard]=constitutive_problem(E,Ep_prev,Hard_prev,...
 % criterion and a linear kinematic hardening.
 %
 % Input data:
-%  E_new - current strain tensor, size(E_new)=(6, n_int)
-%  Ep_prev - plastic strain tensor from the previous time step,
-%            size(Ep_prev)=(6, n_int)
+%  E         - current strain tensor, size(E)=(6,n_int)
+%  Ep_prev   - plastic strain tensor from the previous time step,
+%              size(Ep_prev)=(6,n_int)
 %  Hard_prev - kinematic hardening (tensor) from the previous time step
-%              size(Hard_prev)=(6, n_int)
-%  ELAST - elastic fourth order tensor at integration points
-%          size(ELAST)=(36, n_int)
-%  DEV - deviatoric operator, size(DEV)=(6, 6)
-%  shear - shear moduli at integration points, size(shear)=(1, n_int)
-%  bulk - bulk moduli at integration points, size(shear)=(1, n_int)
-%  a - hardening parameters at integration points, size(a)=(1, n_int)
-%  Y - initial yield stress at integration points, size(Y)=(1, n_int)
+%              size(Hard_prev)=(6,n_int)
+%  shear     - shear moduli at integration points, size(shear)=(1,n_int)
+%  bulk      - bulk moduli at integration points, size(shear)=(1,n_int)
+%  a         - hardening parameters at integration points, size(a)=(1,n_int)
+%  Y         - initial yield stress at integration points, size(Y)=(1,n_int)
 %
 % Output data:
-%  S - stress tensors at integration points, size(S)=(6, n_int)
-%  IND_p - 1*n_int logical array indicating integration points with plastic 
-%          response, n_plast=number of the points with plastic response
-%  DS_p - plastic parts of consistent tangent operators at integr. points,
-%         size(D_p)=(36, n_plast)
-%  Ep - plastic strain, size(Ep)=(6,n_int)
-%  Hard - tensors of kinematic hardening, size(Hard)=(6, n_int)
+%  S     - stress tensors at integration points, size(S)=(6,n_int)
+%  DS    - consistent tangent operators at integr. points,
+%          size(DS)=(36,n_plast)
+%  IND_p - logical array indicating integration points with plastic response,
+%          size(IND_p)=(1,n_int),
+%          n_plast=number of the points with plastic response
+%  Ep    - plastic strain, size(Ep)=(6,n_int)
+%  Hard  - tensors of kinematic hardening, size(Hard)=(6,n_int)
 %
 % =========================================================================
 %
 
 %
-% Elastic tensor at integration points, size(ELAST)=(36, n_int).
+% Elastic tensor at integration points, size(ELAST)=(36,n_int).
 % Deviatoric and volumetric 6x6 matrices
 %
   IOTA=[1;1;1;0;0;0];  
   VOL=IOTA*IOTA'; 
   DEV=diag([1,1,1,1/2,1/2,1/2])-VOL/3; 
-  ELAST=2*DEV(:)*shear+VOL(:)*bulk; 
 
 %
 % Trial variables:
-%   E_tr - trial strain tensors, size(E_tr)=(6,n_int)
-%   S_tr - trial stress tensors, size(E_tr)=(6,n_int)
-%   SD_tr - deviatoric part of the diffence between trial strain 
-%          and hardening tensors, size(SD_tr)=(6,n_int)
+%   E_tr    - trial strain tensors, size(E_tr)=(6,n_int)
+%   S_tr    - trial stress tensors, size(E_tr)=(6,n_int)
+%   SD_tr   - deviatoric part of the diffence between trial strain 
+%             and hardening tensors, size(SD_tr)=(6,n_int)
 %   norm_SD - norm of SD_tr, size(norm_SD)=(1,n_int)
 %
 
@@ -63,20 +60,20 @@ function [S,IND_p,DS_p,Ep,Hard]=constitutive_problem(E,Ep_prev,Hard_prev,...
 % with plastic response
 %
 
-  CRIT=norm_SD-Y;  % size(CRIT)=(1, n_int)
-  IND_p=CRIT>0; % logical array, size(INDplast)=(1, n_int)   
+  CRIT=norm_SD-Y;  % size(CRIT)=(1,n_int)
+  IND_p=CRIT>0;    % logical array, size(IND_p)=(1,n_int)   
 
 %
 % The elastic prediction of unknowns
 %
 
-  S=S_tr; 
+  S=S_tr; DS=2*DEV(:)*shear+VOL(:)*bulk;
 
 %
 % The plastic correction at the selected integration points
 %
 
-  % N_hat - normalized tensor to SD_tr, size(N_hat)=(6, n_int)
+  % N_hat - normalized tensor to SD_tr, size(N_hat)=(6,n_int)
   N_hat=SD_tr(:,IND_p)./repmat(norm_SD(IND_p),6,1);
   
   % plastic multipliers at integration points with plastic response 
@@ -90,7 +87,7 @@ function [S,IND_p,DS_p,Ep,Hard]=constitutive_problem(E,Ep_prev,Hard_prev,...
   ID=DEV(:)*ones(1,length(denom));
   NN_hat=repmat(N_hat,6,1).*kron(N_hat,ones(6,1));
   const=((2*shear(IND_p)).^2)./denom;
-  DS_p=-repmat(const,36,1).*ID+...
+  DS(:,IND_p)=DS(:,IND_p)-repmat(const,36,1).*ID+...
          repmat((const.*Y(IND_p))./norm_SD(IND_p),36,1).*(ID-NN_hat);
 
 %     

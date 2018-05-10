@@ -1,7 +1,7 @@
 % =========================================================================
 %
-%  This program triggers an assembly test for an elastictic body. It is
-%  considered the von Mises yield crotierion and a linear kinematic
+%  This program triggers an assembly test for a 2D elastoplastic body. It
+%  is considered the von Mises yield criterion and a linear kinematic
 %  hardening. The main aim is to compare the assembling time for the
 %  elastic and tangent stiffness matrices. The tangent stiffness matrices
 %  are computed in each time step. One can set optionally 4 types of finite
@@ -14,13 +14,23 @@
 % The main input data 
 %
 
-    % elem_type - the type of finite elements; available choices:
-    %                'P1', 'P2', 'Q1', 'Q2'
-    elem_type='Q2';
-    
-    %    level - a nonnegative integer defining mesh density
-    level=1;
-       
+  elem_type='Q2'; % the type of finite elements; available choices:
+                  % 'P1', 'P2', 'Q1', 'Q2'
+  level=0;        % a nonnegative integer defining mesh density
+  
+  % values of elastic material parameters
+  young = 206900;                        % Young's modulus
+  poisson =  0.29;                       % Poisson's ratio
+  shear = young/(2*(1+poisson)) ;        % shear modulus
+  bulk = young/(3*(1-2*poisson)) ;       % bulk modulus
+  
+  % plastic material parematers
+  a=10000;
+  Y=450*sqrt(2/3);
+  
+  % constant tranction on the back side of the body in each direction
+  traction_force = [0,200,0] ;
+      
 %
 % Mesh generation
 %
@@ -54,12 +64,12 @@
 %
   
   % quadrature points and weights for volume and surface integration
-  [Xi, WF] = quadrature_volume(elem_type);
+  [Xi, WF]     = quadrature_volume(elem_type);
   [Xi_s, WF_s] = quadrature_surface(elem_type);
   
   % local basis functions and their derivatives for volume and surface
   [HatP,DHatP1,DHatP2,DHatP3] = local_basis_volume(elem_type, Xi);
-  [HatP_s,DHatP1_s,DHatP2_s] = local_basis_surface(elem_type, Xi_s);
+  [HatP_s,DHatP1_s,DHatP2_s]  = local_basis_surface(elem_type, Xi_s);
 
 %
 % Number of nodes, elements and integration points + print
@@ -83,18 +93,13 @@
 % Assembling of the elastic stiffness matrix
 %
   
-  % values of material parameters at integration points                      
-  young = 206900;          % Young's modulus
-  poisson =  0.29;         % Poisson's ratio
-  shear = young/(2*(1+poisson)) ;        % shear modulus
-  bulk = young/(3*(1-2*poisson)) ;       % bulk modulus  
-  
+  % values of elastic material parameters at integration points 
   shear =shear*ones(1,n_int);
   bulk=bulk*ones(1,n_int);
    
   % stiffness matrix assembly and the assembly time
   tic;     
-  [K_elast,B,WEIGHT]=elastic_stiffness_matrix(ELEM,COORD,...
+  [K_elast,B,WEIGHT,iD,jD,D_elast]=elastic_stiffness_matrix(ELEM,COORD,...
                             shear,bulk,DHatP1,DHatP2,DHatP3,WF);  
   assembly_elast_time=toc; 
   fprintf('step =%d ',1);
@@ -105,9 +110,6 @@
 %
 % Assembling of the vector of traction forces
 %  
-
-  % constant tranction on the back side of the body in each direction
-  traction_force = [0,200,0] ; 
   
   % values of the density function f_t at surface integration points
   n_e_s=size(NEUMANN,2); % number of surface elements
@@ -124,15 +126,15 @@
 %
 
   % number of load steps and values of load factors
-  d_zeta=1/10;               % constant load increment
+  d_zeta=1/10;              % constant load increment
   zeta=[0:d_zeta:1, (1-d_zeta):-d_zeta:(-1), (-1+d_zeta):d_zeta:0];
                             % sequence of load factors
   n_step = length(zeta);    % number of load steps
-  alpha=zeros(1,n_step);    % work of external forces  
-
-  % plastic material parematers
-  a=10000*ones(1,n_int);
-  Y=450*sqrt(2/3)*ones(1,n_int);
+  alpha=zeros(1,n_step);    % work of external forces   
+  
+  % values of plastic material parematers at integration points
+  a=a*ones(1,n_int);
+  Y=Y*ones(1,n_int);
   
   % initialization
   U = zeros(3,n_n);
@@ -163,17 +165,15 @@
     it=0;              % iteration number
     while true       
         
-      % K_tangent - consistent tangent stiffness matrix 
-      % B'*D_p*B - plastic part of K_tangent
+      % K_consistent tangent stiffness matrix
       tic
-      E(:) = B*U_it(:) ;   % strain at integration points
-      [S,IND_p,DS_p]=constitutive_problem(E,Ep_old,Hard_old,shear,bulk,a,Y);
-                           % solution of the constitutive problem
-      iD=repmat(AUX(:,IND_p),6,1); 
-      jD=kron(AUX(:,IND_p),ones(6,1));
-      vD = repmat(WEIGHT(IND_p),36,1).*DS_p ; 
+      % strain at integration points
+      E(:) = B*U_it(:) ;
+      % solution of the constitutive problem
+      [S,DS,IND_p]=constitutive_problem(E,Ep_old,Hard_old,shear,bulk,a,Y);
+      vD = repmat(WEIGHT,36,1).*DS ; 
       D_p = sparse( iD(:),jD(:),vD(:), 6*n_int,6*n_int ) ;   
-      K_tangent = K_elast+B'*D_p*B;          
+      K_tangent = K_elast+B'*(D_p-D_elast)*B;          
       assembly_time=toc;
       
       % measuring assembly dependance on plastic integration points
@@ -220,7 +220,7 @@
     U_old=U;
     U=U_it;
     E(:) = B*U(:) ;
-    [S,IND_p,DS_p,Ep,Hard]=constitutive_problem(E,Ep_old,Hard_old,shear,bulk,a,Y); 
+    [S,DS,IND_p,Ep,Hard]=constitutive_problem(E,Ep_old,Hard_old,shear,bulk,a,Y); 
     Ep_old=Ep;
     Hard_old=Hard;   
     alpha(i)=f_t(Q)'*U(Q);
@@ -235,8 +235,9 @@
         draw_quantity(COORD,SURF,10*U,zeros(size(Hard_node))+Hard_node,elem_type,size_xy,size_z,size_hole) 
         colorbar off; colorbar('location','south')
         
-        fig = gcf; fig.PaperPositionMode = 'auto'; fig_pos = fig.PaperPosition; fig.PaperSize = [fig_pos(3) fig_pos(4)];
-        print('-painters','-dpdf',strcat('hardening_',num2str(i)))
+%         fig = gcf; fig.PaperPositionMode = 'auto'; fig_pos = fig.PaperPosition; fig.PaperSize = [fig_pos(3) fig_pos(4)];
+%         print('-painters','-dpdf',strcat('figures/fig_VM_3D_hardening_',num2str(i),'_level_',num2str(level)))
+
     end
          
   end %for
@@ -253,9 +254,16 @@
   figure
   plot(alpha,zeta,'x-');
   hold on; plot(alpha([11 21 31 41]),zeta([11 21 31 41]),'ro'); hold off
-  fig = gcf; fig.PaperPositionMode = 'auto'; fig_pos = fig.PaperPosition; fig.PaperSize = [fig_pos(3) fig_pos(4)];
-  print('-painters','-dpdf','hysteresis')
-     
+  axis tight; enlarge_axis(0.1,0.1);
+  xlabel('work of loading'); ylabel('loading scale');
+  legend('all time steps','visualized time steps','location','northwest')
+  
+
+%   fig = gcf; fig.PaperPositionMode = 'auto'; fig_pos = fig.PaperPosition; fig.PaperSize = [fig_pos(3) fig_pos(4)];
+%   print('-painters','-dpdf',strcat('figures/fig_VM_3D_hysteresis_level_',num2str(level)));
+      
+
+  
   % total displacements + deformed shape
   U_total = sqrt(U(1,:).^2 + U(2,:).^2 + U(3,:).^2);
   draw_quantity(COORD,SURF,10*U,U_total,elem_type,size_xy,size_z,size_hole)
@@ -273,10 +281,17 @@
   x_e=[x; x_ext];      
   y_e=[ones(length(x_e),1) x_e]*b;
   y_ext=[1 x_ext]*b;
-  plot(x,y,'bx',x_e,y_e,'r-',x_ext,y_ext,'ro',x_ext,y_ext_meas,'bo');
-  legend('plasticity - assembly times','plasticity - linear fit','plasticity - extrapolation','elasticity - assembly time','location','northwest')    
-  fig = gcf; fig.PaperPositionMode = 'auto'; fig_pos = fig.PaperPosition; fig.PaperSize = [fig_pos(3) fig_pos(4)];
-  print('-painters','-dpdf','plasticity_assembly_times')
+  plot(x,y,'bx',x_e,y_e,'b-',x_ext,y_ext,'bo',x_ext,y_ext_meas,'ro');
+  legend('plasticity - measurements','plasticity - linear fit',...
+  'plasticity - extrapolated value','elasticity','location','northwest')    
+  xlabel('number of plastic/all integration points'); ylabel('assembly time');
+  axis tight; enlarge_axis(0.1,0.1); 
+  
+%   fig = gcf; fig.PaperPositionMode = 'auto'; fig_pos = fig.PaperPosition; fig.PaperSize = [fig_pos(3) fig_pos(4)];
+%   print('-painters','-dpdf',strcat('figures/fig_VM_3D_assembly_times_',elem_type,'_level_',num2str(level))); 
+
+  
+  
   
   
 

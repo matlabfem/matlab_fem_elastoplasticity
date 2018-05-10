@@ -1,7 +1,7 @@
 % =========================================================================
 %
-%  This program triggers an assembly test for an elastictic body. It is
-%  considered perfectly plastic model with the Drucker-Prager yield 
+%  This program triggers an assembly test for a 3D elastoplastic body. It 
+%  is considered perfectly plastic model with the Drucker-Prager yield 
 %  criterion and the strip-footing benchmark. The main aim is to compare
 %  the assembling time for the elastic and tangent stiffness matrices. 
 %  The tangent stiffness matrices are computed in each time step. 
@@ -15,12 +15,21 @@
 % The main input data 
 %
 
-    % elem_type - the type of finite elements; available choices:
-    %                'P1', 'P2', 'Q1', 'Q2'
-    elem_type='Q2';
-    
-    %    level - a nonnegative integer defining mesh density
-    level=0;
+  elem_type='Q2'; % the type of finite elements; available choices:
+                  % 'P1', 'P2', 'Q1', 'Q2'
+  level=0;        % a nonnegative integer defining mesh density
+      
+  % values of elastic material parameters
+  young = 1e7;                           % Young's modulus
+  poisson =  0.48;                       % Poisson's ratio
+  shear = young/(2*(1+poisson)) ;        % shear modulus
+  bulk = young/(3*(1-2*poisson)) ;       % bulk modulus    
+  
+  % values of plastic material parematers
+  c0 = 450 ;                                 % cohesion
+  phi = pi/9;                                % frictional angle  
+  eta = 6*sin(phi)/(sqrt(3)*(3+sin(phi)));   % inner approximation
+  c = 6*c0*cos(phi)/(sqrt(3)*(3+sin(phi)));  % inner approximation
        
 %
 % Mesh generation
@@ -53,13 +62,11 @@
 % Data from the reference element
 %
   
-  % quadrature points and weights for volume and surface integration
+  % quadrature points and weights for volume integration
   [Xi, WF] = quadrature_volume(elem_type);
-  [Xi_s, WF_s] = quadrature_surface(elem_type);
   
-  % local basis functions and their derivatives for volume and surface
+  % local basis functions and their derivatives for volume
   [HatP,DHatP1,DHatP2,DHatP3] = local_basis_volume(elem_type, Xi);
-  [HatP_s,DHatP1_s,DHatP2_s] = local_basis_surface(elem_type, Xi_s);
 
 %
 % Number of nodes, elements and integration points + print
@@ -83,16 +90,14 @@
 % Assembling of the elastic stiffness matrix
 %
   
-  % values of material parameters at integration points                      
-  young = 1e7*ones(1,n_int) ;           % Young's modulus
-  poisson =  0.48*ones(1,n_int) ;         % Poisson's ratio
-  shear = young./(2*(1+poisson)) ;        % shear modulus
-  bulk = young./(3*(1-2*poisson)) ;       % bulk modulus  
+  % values of elastic material parameters at integration points       
+  shear=shear*ones(1,n_int);
+  bulk=bulk*ones(1,n_int); 
    
   % stiffness matrix assembly and the assembly time
   tic;     
   [K_elast,B,WEIGHT,iD,jD,D_elast]=elastic_stiffness_matrix(ELEM,COORD,...
-                                       shear,bulk,DHatP1,DHatP2,DHatP3,WF);  
+                            shear,bulk,DHatP1,DHatP2,DHatP3,WF);  
   assembly_elast_time=toc; 
   fprintf('step =%d ',1);
   fprintf('\n');   
@@ -102,24 +107,22 @@
 %
 % Plastic material parameters
 %
-  c0 = 450 ;                                 % cohesion
-  phi = pi/9;                                % frictional angle  
-  eta = 6*sin(phi)/(sqrt(3)*(3-sin(phi)));   % plane strain approximation
-  c = 6*c0*cos(phi)/(sqrt(3)*(3-sin(phi)));  % plane strain approximation
+
+  % values of plastic material parematers at integration points
   eta=eta*ones(1,n_int);
-  c=c*ones(1,n_int);  
+  c=c*ones(1,n_int); 
    
 %
 % Loading process
 %    
 
   % initial load increment and factor
-  d_zeta=1/1000;  % load increment
+  d_zeta=1/1000;   % load increment
   d_zeta_min=d_zeta/1300;
   d_zeta_old=d_zeta;
   zeta=0;          % load factor
   zeta_old=zeta;
-  zeta_max=1/2;  % maximal value of the load factor  
+  zeta_max=1;      % maximal value of the load factor  
   
   % elastic initial displacements
   Ud = -d_zeta*DIRICHLET;
@@ -156,7 +159,7 @@
     fprintf('\n');             
      
     % Newton's solver (the semismooth Newton method)
-    n_it=50;           % maximal number of Newton iterations
+    n_it=25;           % maximal number of Newton iterations
     it=0;              % iteration number
     while it<n_it       
       
@@ -208,7 +211,7 @@
           
     end%  Newton
      
-    if it<n_it  % successful convergence of the Newton method
+    if criterion<1e-10  % successful convergence of the Newton method
       U_old=U;
       U=U_it;
       E(:) = B*U(:) ;
@@ -218,10 +221,11 @@
       d_zeta_old=d_zeta;
       step=step+1; 
       zeta_hist(step)=zeta;
+      % normalized mean pressure on the footing
       pressure_array=transformation(S(2,:),ELEM,WEIGHT);
-      pressure=-mean(full(pressure_array(Q_ND)));
+      pressure=-mean(full(pressure_array(Q_ND)))/c0;
       pressure_hist(step)=pressure;
-      if pressure-pressure_old<10
+      if (pressure-pressure_old<0.05)&&(criterion<1e-12)
           d_zeta=2*d_zeta;
       end
       pressure_old=pressure;
@@ -255,22 +259,23 @@
 %
       
   % mesh visualization
-  draw_mesh(COORD,SURF,elem_type)     
+  if level<2
+    draw_mesh(COORD,SURF,elem_type)     
+  end
   
   % load path
   figure
-  plot(zeta_hist(1:step),pressure_hist(1:step));
+  semilogx(zeta_hist(1:step),pressure_hist(1:step));
+  xlabel('settlement'); ylabel('normalized pressure');
      
   % total displacements + deformed shape
   U_total = sqrt(U(1,:).^2 + U(2,:).^2 + U(3,:).^2);
   draw_quantity(COORD,SURF,U,U_total,elem_type,size_xy,size_z)
-  colorbar off; colorbar('location','south')
-  
-  fig = gcf; fig.PaperPositionMode = 'auto'; fig_pos = fig.PaperPosition; fig.PaperSize = [fig_pos(3) fig_pos(4)];
-  print('-painters','-dpdf',strcat('displacement_',num2str(step)))
-  
-  
-  
+  colorbar off; colorbar('location','south')  
+
+%   fig = gcf; fig.PaperPositionMode = 'auto'; fig_pos = fig.PaperPosition; fig.PaperSize = [fig_pos(3) fig_pos(4)];
+%   print('-painters','-dpdf',strcat('displacement_',num2str(step)))    
+    
   % plastic multipliers
   Ep_node = transformation(sqrt(sum(Ep.*Ep)),ELEM,WEIGHT); 
   draw_quantity(COORD,SURF,0*U,zeros(size(Ep_node))+Ep_node,elem_type,size_xy,size_z)
