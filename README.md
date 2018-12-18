@@ -1,4 +1,4 @@
-# Fast MATLAB assembly of elastoplastic FEM matrices in 2D and 3D
+# Efficient and flexible MATLAB implementation of 2D and 3D elastoplastic problems
 ## Authors
 Martin Cermak (UGN Ostrava), Stanislav Sysala (UGN Ostrava), Jan Valdman (UTIA Praha) 
 
